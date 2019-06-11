@@ -249,6 +249,10 @@ class HMMBuildJob(ExternalSeppJob):
         assert isinstance(subproblem, sepp.problem.SeppProblem)
         assert isinstance(
             subproblem.subalignment, sepp.problem.ReadonlySubalignment)
+        if hasattr(subproblem.subtree, 'bits'):
+            self.bitscore = subproblem.subtree.bits
+        else:
+            self.bitscore = None
         self.symfrac = symfrac
         # pdb.set_trace()
         self.infile = sepp.filemgr.tempfile_for_subproblem(
@@ -265,7 +269,9 @@ class HMMBuildJob(ExternalSeppJob):
             self.options = kwargs['options']
 
     def get_invocation(self):
-        invoc = [self.path, '--ere', '0.59', "--cpu", "1",
+        print(self.bitscore)
+        bitscore = self.bitscore or 0.59
+        invoc = [self.path, '--ere', str(bitscore), "--cpu", "1",
                  "--%s" % self.molecule]
         if self.symfrac is True:
             invoc.extend(["--symfrac", "0.0"])

@@ -27,7 +27,8 @@ from dendropy.datamodel.treemodel import _convert_node_to_root_polytomy as \
 from sepp import get_logger, sortByValue
 from sepp.alignment import get_pdistance
 from sepp.decompose_tree import decompose_by_diameter
-
+import math
+# from termcolor import colored
 
 try:
     from StringIO import StringIO
@@ -362,6 +363,26 @@ for l2 in sys.stdin.readlines():
 
         SIDE EFFECT: deroots the tree (TODO: necessary?)
         """
+        def diameter_height(node):
+            if node.is_leaf():
+                return 0, 0
+            
+            # print(node.edge.length)
+            ld, lh = diameter_height(node.child_nodes()[0])
+            rd, rh = diameter_height(node.child_nodes()[1])
+            print((ld, lh, rd, rh))
+            
+            return max(lh + rh, ld, rd), max(lh + node.child_nodes()[0].edge.length, rh + node.child_nodes()[1].edge.length)
+
+        def find_tree_diameter(node):
+            d, _ = diameter_height(node)
+            return d
+
+        def get_bits(diameter):
+            p = (1/4) * (1+3*math.exp(-4/3*diameter))
+            print(p)
+            return -(p*math.log(p, 2)+3*((1-p)/3*math.log((1-p)/3, 2)))
+
         # uym2 added #
         if (decomp_strategy in ["midpoint", "centroid"]):
             T = decompose_by_diameter(
@@ -384,6 +405,11 @@ for l2 in sys.stdin.readlines():
             (decomp_strategy == 'hierarchical') and
             (self.count_leaves() > maxSize)
            ):
+            # print(find_tree_diameter(self._tree.seed_node))
+            self.diameter = find_tree_diameter(self._tree.seed_node)
+            if self.diameter:
+                self.bits = get_bits(self.diameter)
+            # self.bits = get_bits(self.diameter)
             tree_map[len(tree_map)] = copy.deepcopy(self)
         if (
             (self.count_leaves() > maxSize) or
@@ -403,6 +429,10 @@ for l2 in sys.stdin.readlines():
                      "according to given subset sizes: %d , %d:\n %s") % (
                      minSize, maxSize, self._tree))
         else:
+            # print(find_tree_diameter(self._tree.seed_node))
+            self.diameter = find_tree_diameter(self._tree.seed_node)
+            if self.diameter:
+                self.bits = get_bits(self.diameter)
             tree_map[len(tree_map)] = self
         return tree_map
 
